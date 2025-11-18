@@ -324,9 +324,9 @@ impl<ENUM: PartialEq> Register<ENUM> {
             // Read-modify-write
             let mask = create_mask(field.width, field.offset);
             // Appending value
-            new_val = new_val | ((value << field.offset) & mask);
+            new_val |= (value << field.offset) & mask;
             // Appending mask
-            new_mask = new_mask | mask;
+            new_mask |= mask;
         }
 
         // Computing and writing the final value
@@ -373,8 +373,7 @@ impl<ENUM: PartialEq> Register<ENUM> {
 
 #[inline]
 fn create_mask(width: u8, offset: u8) -> u32 {
-    let mask = if width == 32 { u32::MAX } else { ((1u32 << width) - 1) << offset };
-    mask
+    if width == 32 { u32::MAX } else { ((1u32 << width) - 1) << offset }
 }
 
 #[inline]

@@ -112,6 +112,7 @@
 //! ```
 
 #![no_std]
+#![allow(clippy::too_many_arguments)]
 
 pub mod reg;
 mod reg_helper;
@@ -378,9 +379,9 @@ impl<B: RegisterBus> Adxl345<B> {
                 }
             };
 
-            x = x >> shift;
-            y = y >> shift;
-            z = z >> shift;
+            x >>= shift;
+            y >>= shift;
+            z >>= shift;
         }
 
         Ok((x, y, z))
