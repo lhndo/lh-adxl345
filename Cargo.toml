@@ -5,7 +5,7 @@ edition     = "2024"
 description = "ADXL345 Accelerometer Driver"
 readme      = "README.md"
 authors     = ["lhndo"]
-categories  = ["no_std", "embedded", "hardware-support"]
+categories  = ["no-std", "embedded", "hardware-support"]
 keywords    = ["adxl345", "accelerometer"]
 
 
