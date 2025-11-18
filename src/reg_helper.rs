@@ -348,6 +348,23 @@ impl<ENUM: PartialEq> Register<ENUM> {
         bus.write_register(self.addr, val)?;
         Ok(())
     }
+
+    // —————————————————————————————————————————— Other ————————————————————————————————————————————
+
+    pub fn get_field_mask(&self, field_id: ENUM) -> Result<u32, ErrorReg<()>> {
+        let fields = self.fields.ok_or(ErrorReg::NoFields)?;
+
+        let field = fields
+            .iter()
+            .find(|f| f.id == field_id)
+            .ok_or(ErrorReg::FieldNotFound)?;
+
+        if !validate_field(field.width, field.offset, self.bytes) {
+            return Err(ErrorReg::WrongFieldDef);
+        }
+
+        Ok(create_mask(field.width, field.offset))
+    }
 }
 
 // —————————————————————————————————————————————————————————————————————————————————————————————————
