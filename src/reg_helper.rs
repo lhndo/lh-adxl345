@@ -161,10 +161,7 @@ impl<ENUM: PartialEq> Register<ENUM> {
         bus: &mut B,
         field_id: ENUM,
     ) -> Result<u32, ErrorReg<B::Error>> {
-        let Some(fields) = self.fields
-        else {
-            return Err(ErrorReg::NoFields);
-        };
+        let fields = self.fields.ok_or(ErrorReg::NoFields)?;
 
         let field = fields
             .iter()
@@ -180,6 +177,42 @@ impl<ENUM: PartialEq> Register<ENUM> {
         let mask = create_mask(field.width, field.offset);
         let val = (raw & mask) >> field.offset;
         Ok(val)
+    }
+
+    /// Read multiple fields
+    /// Endian conversion done based based on the order specified in the data structure
+    pub fn read_multiple_fields<B: RegisterBus>(
+        &self,
+        bus: &mut B,
+        field_ids: &[ENUM],
+        output: &mut [u32],
+    ) -> Result<(), ErrorReg<B::Error>> {
+        if field_ids.len() > output.len() {
+            return Err(ErrorReg::BufferOverrun);
+        }
+        let fields = self.fields.ok_or(ErrorReg::NoFields)?;
+
+        // Read the register once
+        let raw_read = self.read(bus)?;
+
+        // Extract each field
+        for (i, field_id) in field_ids.iter().enumerate() {
+            let field = fields
+                .iter()
+                .find(|f| f.id == *field_id)
+                .ok_or(ErrorReg::FieldNotFound)?;
+
+            // Validate field definition
+            if !validate_field(field.width, field.offset, self.bytes) {
+                return Err(ErrorReg::WrongFieldDef);
+            }
+
+            // Extract field value using mask and shift
+            let mask = create_mask(field.width, field.offset);
+            output[i] = (raw_read & mask) >> field.offset;
+        }
+
+        Ok(())
     }
 
     /// Read a memory block starting at this register address into the provided buffer
@@ -217,12 +250,12 @@ impl<ENUM: PartialEq> Register<ENUM> {
     }
 
     /// Write the value of a single field
-    /// Performs a read/write internally
+    /// Performs read-modify-write internally
     pub fn write_field<B: RegisterBus>(
         &self,
         bus: &mut B,
         field_id: ENUM,
-        val: u32,
+        value: u32,
     ) -> Result<(), ErrorReg<B::Error>> {
         // write_field requires RW access because it performs read-modify-write
         if !matches!(self.access, Mode::RW) {
@@ -242,14 +275,62 @@ impl<ENUM: PartialEq> Register<ENUM> {
 
         // Validate value to field fit
         let max_field_val = if field.width == 32 { u32::MAX } else { (1u32 << field.width) - 1 };
-        if val > max_field_val {
+        if value > max_field_val {
             return Err(ErrorReg::ValueTooLarge);
         }
 
         // Read-modify-write
         let current_val = self.read(bus)?;
         let mask = create_mask(field.width, field.offset);
-        let new_val = (current_val & !mask) | ((val << field.offset) & mask);
+        let new_val = (current_val & !mask) | ((value << field.offset) & mask);
+        self.write(bus, new_val)
+    }
+
+    /// Write to multiple fields in one transaction
+    /// Performs read-modify-write internally
+    pub fn write_multiple_fields<B: RegisterBus>(
+        &self,
+        bus: &mut B,
+        fields_with_values: &[(ENUM, u32)],
+    ) -> Result<(), ErrorReg<B::Error>> {
+        // write_field requires RW access because it performs read-modify-write
+        if !matches!(self.access, Mode::RW) {
+            return Err(ErrorReg::ReqRW);
+        }
+
+        let fields = self.fields.ok_or(ErrorReg::NoFields)?;
+
+        let current_val = self.read(bus)?;
+        let mut new_val = 0_u32;
+        let mut new_mask = 0_u32;
+
+        for (id, value) in fields_with_values {
+            let field = fields
+                .iter()
+                .find(|f| f.id == *id)
+                .ok_or(ErrorReg::FieldNotFound)?;
+
+            if !validate_field(field.width, field.offset, self.bytes) {
+                return Err(ErrorReg::WrongFieldDef);
+            }
+
+            // Validate value to field fit
+            let max_field_val =
+                if field.width == 32 { u32::MAX } else { (1u32 << field.width) - 1 };
+            if *value > max_field_val {
+                return Err(ErrorReg::ValueTooLarge);
+            }
+
+            // Read-modify-write
+            let mask = create_mask(field.width, field.offset);
+            // Appending value
+            new_val = new_val | ((value << field.offset) & mask);
+            // Appending mask
+            new_mask = new_mask | mask;
+        }
+
+        // Computing and writing the final value
+        new_val = (current_val & !new_mask) | (new_val & new_mask);
         self.write(bus, new_val)
     }
 
@@ -299,6 +380,7 @@ fn validate_field(width: u8, offset: u8, bytes: u8) -> bool {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorReg<BUS_ER: Debug> {
     ValueTooLarge,
+    BufferOverrun,
     NoFields,
     ReadOnly,
     WriteOnly,
@@ -312,6 +394,7 @@ impl<BUS_ER: Debug> Display for ErrorReg<BUS_ER> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         match &self {
             ErrorReg::ValueTooLarge => write!(f, "field value too large"),
+            ErrorReg::BufferOverrun => write!(f, "buffer overrun"),
             ErrorReg::NoFields => write!(f, "register has no fields"),
             ErrorReg::ReadOnly => write!(f, "read only register"),
             ErrorReg::WriteOnly => write!(f, "write only register"),

@@ -1,6 +1,6 @@
 [package]
 name        = "lh-adxl345"
-version     = "0.0.2"
+version     = "0.0.3"
 edition     = "2024"
 description = "ADXL345 Accelerometer Driver"
 readme      = "README.md"

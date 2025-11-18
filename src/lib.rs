@@ -412,20 +412,40 @@ impl<B: RegisterBus> Adxl345<B> {
 
     /// Read ACT_TAP_STATUS: ACT (X Y Z)
     pub fn read_act_source_status(&mut self) -> AdxlResult<(bool, bool, bool), B> {
-        Ok((
-            reg::ACT_TAP_STATUS.read_field(&mut self.bus, reg::FL_ATS::ACT_X_SRC)? as u8 != 0,
-            reg::ACT_TAP_STATUS.read_field(&mut self.bus, reg::FL_ATS::ACT_Y_SRC)? as u8 != 0,
-            reg::ACT_TAP_STATUS.read_field(&mut self.bus, reg::FL_ATS::ACT_Z_SRC)? as u8 != 0,
-        ))
+        let mut buf = [0_u32; 3];
+
+        reg::ACT_TAP_STATUS.read_multiple_fields(
+            &mut self.bus,
+            &[
+                reg::FL_ATS::ACT_X_SRC,
+                reg::FL_ATS::ACT_Y_SRC,
+                reg::FL_ATS::ACT_Z_SRC,
+            ],
+            &mut buf,
+        )?;
+
+        let (x, y, z) = (buf[0] != 0, buf[1] != 0, buf[2] != 0);
+
+        Ok((x, y, z))
     }
 
     /// Read ACT_TAP_STATUS: TAP (X Y Z)
     pub fn read_tap_source_status(&mut self) -> AdxlResult<(bool, bool, bool), B> {
-        Ok((
-            reg::ACT_TAP_STATUS.read_field(&mut self.bus, reg::FL_ATS::TAP_X_SRC)? as u8 != 0,
-            reg::ACT_TAP_STATUS.read_field(&mut self.bus, reg::FL_ATS::TAP_Y_SRC)? as u8 != 0,
-            reg::ACT_TAP_STATUS.read_field(&mut self.bus, reg::FL_ATS::TAP_Z_SRC)? as u8 != 0,
-        ))
+        let mut buf = [0_u32; 3];
+
+        reg::ACT_TAP_STATUS.read_multiple_fields(
+            &mut self.bus,
+            &[
+                reg::FL_ATS::TAP_X_SRC,
+                reg::FL_ATS::TAP_Y_SRC,
+                reg::FL_ATS::TAP_Z_SRC,
+            ],
+            &mut buf,
+        )?;
+
+        let (x, y, z) = (buf[0] != 0, buf[1] != 0, buf[2] != 0);
+
+        Ok((x, y, z))
     }
 
     #[rustfmt::skip]
@@ -510,13 +530,15 @@ impl<B: RegisterBus> Adxl345<B> {
         justify: Justify,
         range: Range,
     ) -> AdxlResult<(), B> {
-        reg::DATA_FORMAT.write_field(&mut self.bus, reg::FL_DF::FULL_RES, res as u32)?;
+        //
+        reg::DATA_FORMAT.write_multiple_fields(&mut self.bus, &[
+            (reg::FL_DF::FULL_RES, res as u32),
+            (reg::FL_DF::JUSTIFY, justify as u32),
+            (reg::FL_DF::RANGE, range as u32),
+        ])?;
+
         self.res = res;
-
-        reg::DATA_FORMAT.write_field(&mut self.bus, reg::FL_DF::JUSTIFY, justify as u32)?;
         self.justify = justify;
-
-        reg::DATA_FORMAT.write_field(&mut self.bus, reg::FL_DF::RANGE, range as u32)?;
         self.range = range;
 
         self.unit = {
@@ -546,13 +568,13 @@ impl<B: RegisterBus> Adxl345<B> {
         watermark_samples_num: u8,
     ) -> AdxlResult<(), B> {
         let watermark_samples_num = watermark_samples_num.min(31);
-        reg::FIFO_CTL.write_field(&mut self.bus, reg::FL_FC::FIFO_MODE, fifo_mode as u32)?;
-        reg::FIFO_CTL.write_field(&mut self.bus, reg::FL_FC::TRIGGER, trigger as u32)?;
-        reg::FIFO_CTL.write_field(
-            &mut self.bus,
-            reg::FL_FC::SAMPLES,
-            watermark_samples_num as u32,
-        )?;
+
+        reg::FIFO_CTL.write_multiple_fields(&mut self.bus, &[
+            (reg::FL_FC::FIFO_MODE, fifo_mode as u32),
+            (reg::FL_FC::TRIGGER, trigger as u32),
+            (reg::FL_FC::SAMPLES, watermark_samples_num as u32),
+        ])?;
+
         Ok(())
     }
 
@@ -779,9 +801,12 @@ impl<B: RegisterBus> Adxl345<B> {
     /// enable bit enables x-, y-, or z-axis participation in tap detection.
     /// A setting of 0 excludes the selected axis from participation in tap detection.
     pub fn set_tap_axes(&mut self, tap_x: bool, tap_y: bool, tap_z: bool) -> AdxlResult<(), B> {
-        reg::TAP_AXES.write_field(&mut self.bus, reg::FL_TA::TAP_X_EN, tap_x as u32)?;
-        reg::TAP_AXES.write_field(&mut self.bus, reg::FL_TA::TAP_Y_EN, tap_y as u32)?;
-        reg::TAP_AXES.write_field(&mut self.bus, reg::FL_TA::TAP_Z_EN, tap_z as u32)?;
+        reg::TAP_AXES.write_multiple_fields(&mut self.bus, &[
+            (reg::FL_TA::TAP_X_EN, tap_x as u32),
+            (reg::FL_TA::TAP_Y_EN, tap_y as u32),
+            (reg::FL_TA::TAP_Z_EN, tap_z as u32),
+        ])?;
+
         Ok(())
     }
 
@@ -938,14 +963,15 @@ impl<SPI: spi::SpiBus, CS: StatefulOutputPin> RegisterBus for AdxlBusSpi<SPI, CS
         let mut temp_buf = [0u8; MAX_BUF_LEN + 1];
 
         self.spi_cs.set_low().expect("SPI CS pin");
-        self.spi
-            .transfer(&mut temp_buf[..buffer.len() + 1], &[addr_byte])?;
+        let result = self
+            .spi
+            .transfer(&mut temp_buf[..buffer.len() + 1], &[addr_byte]);
         self.spi_cs.set_high().expect("SPI CS pin");
 
         // Copy received data into the user buffer (skip the first byte)
         buffer.copy_from_slice(&temp_buf[1..buffer.len() + 1]);
 
-        Ok(())
+        result
     }
 
     fn write_register(&mut self, reg_addr: u8, data: &[u8]) -> Result<(), Self::Error> {
@@ -964,9 +990,9 @@ impl<SPI: spi::SpiBus, CS: StatefulOutputPin> RegisterBus for AdxlBusSpi<SPI, CS
         buf[1..data.len() + 1].copy_from_slice(data);
 
         self.spi_cs.set_low().expect("SPI CS pin");
-        self.spi.write(&buf[..data.len() + 1])?;
+        let result = self.spi.write(&buf[..data.len() + 1]);
         self.spi_cs.set_high().expect("SPI CS pin");
 
-        Ok(())
+        result
     }
 }
