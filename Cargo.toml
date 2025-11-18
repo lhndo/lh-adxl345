@@ -1,0 +1,30 @@
+[package]
+name        = "lh-adxl345"
+version     = "0.0.2"
+edition     = "2024"
+description = "ADXL345 Accelerometer Driver"
+readme      = "README.md"
+authors     = ["lhndo"]
+categories  = ["no_std", "embedded", "hardware-support"]
+keywords    = ["adxl345", "accelerometer"]
+
+
+license    = "MIT"
+repository = "https://github.com/lhndo/lh-adxl345"
+
+
+[dependencies]
+embedded-hal = "1.0.0"
+
+[lints.rust]
+dead_code        = "allow"
+unused_variables = "allow"
+
+
+[lints.clippy]
+needless_return       = "allow"
+new_without_default   = "allow"
+comparison_chain      = "allow"
+manual_range_contains = "allow"
+needless_range_loop   = "allow"
+unused_self           = "allow"
