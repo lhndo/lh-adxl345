@@ -21,7 +21,7 @@ pub const ADXL_DEVICE_ID: u8 = 0xE5; // Expected HW ID
 // —————————————————————————————————————————————————————————————————————————————————————————————————
 
 // Empty Flag Field ID
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FL {}
 
 pub const DEVID: Register<FL> = validated(Register {
@@ -105,7 +105,7 @@ pub const TIME_INACT: Register<FL> = validated(Register {
     fields: None,
 });
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FL_AIC {
     ACT_ACDC,
     ACT_X_EN,
@@ -181,7 +181,7 @@ pub const TIME_FF: Register<FL> = validated(Register {
     fields: None,
 });
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FL_TA {
     SUPPRESS,
     TAP_X_EN,
@@ -218,7 +218,7 @@ pub const TAP_AXES: Register<FL_TA> = validated(Register {
     ]),
 });
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FL_ATS {
     ACT_X_SRC,
     ACT_Y_SRC,
@@ -273,7 +273,7 @@ pub const ACT_TAP_STATUS: Register<FL_ATS> = validated(Register {
     ]),
 });
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FL_BR {
     LOW_POWER,
     RATE,
@@ -298,7 +298,7 @@ pub const BW_RATE: Register<FL_BR> = validated(Register {
     ]),
 });
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FL_PC {
     LINK,
     AUTO_SLEEP,
@@ -342,7 +342,7 @@ pub const POWER_CTL: Register<FL_PC> = validated(Register {
 });
 
 // Flags used by INT_ENABLE, INT_MAP, INT_SOURCE
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FL_I {
     DATA_READY,
     SINGLE_TAP,
@@ -502,7 +502,7 @@ pub const INT_SOURCE: Register<FL_I> = validated(Register {
 });
 
 // FIFO
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FL_DF {
     SELF_TEST,
     SPI,
@@ -575,7 +575,7 @@ pub const DATAZ0: Register<FL> = validated(Register {
 });
 
 // FIFO
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FL_FC {
     FIFO_MODE,
     TRIGGER,
@@ -607,7 +607,7 @@ pub const FIFO_CTL: Register<FL_FC> = validated(Register {
 });
 
 // FIFO_STATUS
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FL_FS {
     FIFO_TRIG,
     ENTRIES,
