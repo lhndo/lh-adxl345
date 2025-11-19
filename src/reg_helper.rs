@@ -2,8 +2,8 @@
 //!
 //! For implementing register maps for various I2C/SPI devices
 //!
-//!  Supports max 4 bytes long registers
-//!  External interactions though u32
+//!  For max 4 byte long registers
+//!  Inteprets data though u32's
 //!
 //! Example:
 //!
