@@ -20,90 +20,90 @@ pub const ADXL_DEVICE_ID: u8 = 0xE5; // Expected HW ID
 //                                           ADXL 345 Registers
 // —————————————————————————————————————————————————————————————————————————————————————————————————
 
-// General Flag Field ID
+// Empty Flag Field ID
 #[derive(Debug, PartialEq)]
 pub enum FL {}
 
-pub const DEVID: Register<FL> = Register {
+pub const DEVID: Register<FL> = validated(Register {
     addr:   0x00,
     access: Mode::R,
     bytes:  1,
     order:  End::Little,
     fields: None,
-};
+});
 
 // 0x01–0x1C reserved
 
-pub const THRESH_TAP: Register<FL> = Register {
+pub const THRESH_TAP: Register<FL> = validated(Register {
     addr:   0x1D,
     access: Mode::RW,
     bytes:  1,
     order:  End::Little,
     fields: None,
-};
-pub const OFSX: Register<FL> = Register {
+});
+pub const OFSX: Register<FL> = validated(Register {
     addr:   0x1E,
     access: Mode::RW,
     bytes:  1,
     order:  End::Little,
     fields: None,
-};
-pub const OFSY: Register<FL> = Register {
+});
+pub const OFSY: Register<FL> = validated(Register {
     addr:   0x1F,
     access: Mode::RW,
     bytes:  1,
     order:  End::Little,
     fields: None,
-};
-pub const OFSZ: Register<FL> = Register {
+});
+pub const OFSZ: Register<FL> = validated(Register {
     addr:   0x20,
     access: Mode::RW,
     bytes:  1,
     order:  End::Little,
     fields: None,
-};
-pub const DUR: Register<FL> = Register {
+});
+pub const DUR: Register<FL> = validated(Register {
     addr:   0x21,
     access: Mode::RW,
     bytes:  1,
     order:  End::Little,
     fields: None,
-};
-pub const LATENT: Register<FL> = Register {
+});
+pub const LATENT: Register<FL> = validated(Register {
     addr:   0x22,
     access: Mode::RW,
     bytes:  1,
     order:  End::Little,
     fields: None,
-};
-pub const WINDOW: Register<FL> = Register {
+});
+pub const WINDOW: Register<FL> = validated(Register {
     addr:   0x23,
     access: Mode::RW,
     bytes:  1,
     order:  End::Little,
     fields: None,
-};
-pub const THRESH_ACT: Register<FL> = Register {
+});
+pub const THRESH_ACT: Register<FL> = validated(Register {
     addr:   0x24,
     access: Mode::RW,
     bytes:  1,
     order:  End::Little,
     fields: None,
-};
-pub const THRESH_INACT: Register<FL> = Register {
+});
+pub const THRESH_INACT: Register<FL> = validated(Register {
     addr:   0x25,
     access: Mode::RW,
     bytes:  1,
     order:  End::Little,
     fields: None,
-};
-pub const TIME_INACT: Register<FL> = Register {
+});
+pub const TIME_INACT: Register<FL> = validated(Register {
     addr:   0x26,
     access: Mode::RW,
     bytes:  1,
     order:  End::Little,
     fields: None,
-};
+});
 
 #[derive(Debug, PartialEq)]
 pub enum FL_AIC {
@@ -117,7 +117,7 @@ pub enum FL_AIC {
     INACT_Z_EN,
 }
 
-pub const ACT_INACT_CTL: Register<FL_AIC> = Register {
+pub const ACT_INACT_CTL: Register<FL_AIC> = validated(Register {
     addr:   0x27,
     access: Mode::RW,
     bytes:  1,
@@ -164,22 +164,22 @@ pub const ACT_INACT_CTL: Register<FL_AIC> = Register {
             offset: 0,
         },
     ]),
-};
+});
 
-pub const THRESH_FF: Register<FL> = Register {
+pub const THRESH_FF: Register<FL> = validated(Register {
     addr:   0x28,
     access: Mode::RW,
     bytes:  1,
     order:  End::Little,
     fields: None,
-};
-pub const TIME_FF: Register<FL> = Register {
+});
+pub const TIME_FF: Register<FL> = validated(Register {
     addr:   0x29,
     access: Mode::RW,
     bytes:  1,
     order:  End::Little,
     fields: None,
-};
+});
 
 #[derive(Debug, PartialEq)]
 pub enum FL_TA {
@@ -189,7 +189,7 @@ pub enum FL_TA {
     TAP_Z_EN,
 }
 
-pub const TAP_AXES: Register<FL_TA> = Register {
+pub const TAP_AXES: Register<FL_TA> = validated(Register {
     addr:   0x2A,
     access: Mode::RW,
     bytes:  1,
@@ -216,7 +216,7 @@ pub const TAP_AXES: Register<FL_TA> = Register {
             offset: 0,
         },
     ]),
-};
+});
 
 #[derive(Debug, PartialEq)]
 pub enum FL_ATS {
@@ -229,7 +229,7 @@ pub enum FL_ATS {
     TAP_Z_SRC,
 }
 
-pub const ACT_TAP_STATUS: Register<FL_ATS> = Register {
+pub const ACT_TAP_STATUS: Register<FL_ATS> = validated(Register {
     addr:   0x2B,
     access: Mode::R,
     bytes:  1,
@@ -271,7 +271,7 @@ pub const ACT_TAP_STATUS: Register<FL_ATS> = Register {
             offset: 0,
         },
     ]),
-};
+});
 
 #[derive(Debug, PartialEq)]
 pub enum FL_BR {
@@ -279,7 +279,7 @@ pub enum FL_BR {
     RATE,
 }
 
-pub const BW_RATE: Register<FL_BR> = Register {
+pub const BW_RATE: Register<FL_BR> = validated(Register {
     addr:   0x2C,
     access: Mode::RW,
     bytes:  1,
@@ -296,7 +296,7 @@ pub const BW_RATE: Register<FL_BR> = Register {
             offset: 0,
         },
     ]),
-};
+});
 
 #[derive(Debug, PartialEq)]
 pub enum FL_PC {
@@ -307,7 +307,7 @@ pub enum FL_PC {
     WAKEUP,
 }
 
-pub const POWER_CTL: Register<FL_PC> = Register {
+pub const POWER_CTL: Register<FL_PC> = validated(Register {
     addr:   0x2D,
     access: Mode::RW,
     bytes:  1,
@@ -339,7 +339,7 @@ pub const POWER_CTL: Register<FL_PC> = Register {
             offset: 0,
         },
     ]),
-};
+});
 
 // Flags used by INT_ENABLE, INT_MAP, INT_SOURCE
 #[derive(Debug, PartialEq)]
@@ -354,7 +354,7 @@ pub enum FL_I {
     OVERRUN,
 }
 
-pub const INT_ENABLE: Register<FL_I> = Register {
+pub const INT_ENABLE: Register<FL_I> = validated(Register {
     addr:   0x2E,
     access: Mode::RW,
     bytes:  1,
@@ -401,9 +401,9 @@ pub const INT_ENABLE: Register<FL_I> = Register {
             offset: 0,
         },
     ]),
-};
+});
 
-pub const INT_MAP: Register<FL_I> = Register {
+pub const INT_MAP: Register<FL_I> = validated(Register {
     addr:   0x2F,
     access: Mode::RW,
     bytes:  1,
@@ -450,9 +450,9 @@ pub const INT_MAP: Register<FL_I> = Register {
             offset: 0,
         },
     ]),
-};
+});
 
-pub const INT_SOURCE: Register<FL_I> = Register {
+pub const INT_SOURCE: Register<FL_I> = validated(Register {
     addr:   0x30,
     access: Mode::R,
     bytes:  1,
@@ -499,7 +499,7 @@ pub const INT_SOURCE: Register<FL_I> = Register {
             offset: 0,
         },
     ]),
-};
+});
 
 // FIFO
 #[derive(Debug, PartialEq)]
@@ -512,7 +512,7 @@ pub enum FL_DF {
     RANGE,
 }
 
-pub const DATA_FORMAT: Register<FL_DF> = Register {
+pub const DATA_FORMAT: Register<FL_DF> = validated(Register {
     addr:   0x31,
     access: Mode::RW,
     bytes:  1,
@@ -549,30 +549,30 @@ pub const DATA_FORMAT: Register<FL_DF> = Register {
             offset: 0,
         },
     ]),
-};
+});
 
 // Acceleration axis outputs (I16)
-pub const DATAX0: Register<FL> = Register {
+pub const DATAX0: Register<FL> = validated(Register {
     addr:   0x32,
     access: Mode::R,
     bytes:  2,
     order:  End::Little,
     fields: None,
-};
-pub const DATAY0: Register<FL> = Register {
+});
+pub const DATAY0: Register<FL> = validated(Register {
     addr:   0x34,
     access: Mode::R,
     bytes:  2,
     order:  End::Little,
     fields: None,
-};
-pub const DATAZ0: Register<FL> = Register {
+});
+pub const DATAZ0: Register<FL> = validated(Register {
     addr:   0x36,
     access: Mode::R,
     bytes:  2,
     order:  End::Little,
     fields: None,
-};
+});
 
 // FIFO
 #[derive(Debug, PartialEq)]
@@ -582,7 +582,7 @@ pub enum FL_FC {
     SAMPLES,
 }
 
-pub const FIFO_CTL: Register<FL_FC> = Register {
+pub const FIFO_CTL: Register<FL_FC> = validated(Register {
     addr:   0x38,
     access: Mode::RW,
     bytes:  1,
@@ -604,7 +604,7 @@ pub const FIFO_CTL: Register<FL_FC> = Register {
             offset: 0,
         },
     ]),
-};
+});
 
 // FIFO_STATUS
 #[derive(Debug, PartialEq)]
@@ -613,7 +613,7 @@ pub enum FL_FS {
     ENTRIES,
 }
 
-pub const FIFO_STATUS: Register<FL_FS> = Register {
+pub const FIFO_STATUS: Register<FL_FS> = validated(Register {
     addr:   0x39,
     access: Mode::R,
     bytes:  1,
@@ -630,4 +630,4 @@ pub const FIFO_STATUS: Register<FL_FS> = Register {
             offset: 0,
         },
     ]),
-};
+});

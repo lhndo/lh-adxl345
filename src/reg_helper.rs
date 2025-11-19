@@ -16,13 +16,13 @@
 //! #[derive(Debug, PartialEq)]
 //! pub enum FL {}
 //!
-//! pub const DEVID: Register<FL> = Register {
+//! pub const DEVID: Register<FL> = validated(Register {
 //!     addr:   0x00,
 //!     access: Mode::R,
 //!     bytes:  1,
 //!     order:  End::Little,
 //!     fields: None,
-//! };
+//! });
 //!
 //! #[derive(Debug, PartialEq)]
 //! pub enum FL_TA {
@@ -32,7 +32,7 @@
 //!     TAP_Z_EN,
 //! }
 //!
-//! pub const TAP_AXES: Register<FL_TA> = Register {
+//! pub const TAP_AXES: Register<FL_TA> = validated(Register {
 //!     addr:   0x2A,
 //!     access: Mode::RW,
 //!     bytes:  1,
@@ -59,7 +59,7 @@
 //!             offset: 0,
 //!         },
 //!     ]),
-//! };
+//! });
 //!
 //! ...
 //!
@@ -77,6 +77,8 @@ use core::result::Result;
 // —————————————————————————————————————————————————————————————————————————————————————————————————
 //                                             Globals
 // —————————————————————————————————————————————————————————————————————————————————————————————————
+
+const MAX_BYTES: u8 = 4;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[repr(C)]
@@ -122,14 +124,10 @@ impl<ENUM: PartialEq> Register<ENUM> {
     // —————————————————————————————————————————— Reads ————————————————————————————————————————————
 
     /// Read the registry, trim and format the data, then store it as u32.
-    /// Endian conversion done based on the order specified  
+    /// Endian conversion done based on the order specified in self.order
     pub fn read<B: RegisterBus>(&self, bus: &mut B) -> Result<u32, ErrorReg<B::Error>> {
         if matches!(self.access, Mode::W) {
             return Err(ErrorReg::WriteOnly);
-        }
-
-        if self.bytes > 4 {
-            return Err(ErrorReg::WrongFieldDef);
         }
 
         // Read bytes
@@ -168,10 +166,6 @@ impl<ENUM: PartialEq> Register<ENUM> {
             .find(|f| f.id == field_id)
             .ok_or(ErrorReg::FieldNotFound)?;
 
-        if !validate_field(field.width, field.offset, self.bytes) {
-            return Err(ErrorReg::WrongFieldDef);
-        };
-
         // Read bytes
         let raw = self.read(bus)?;
         let mask = create_mask(field.width, field.offset);
@@ -202,11 +196,6 @@ impl<ENUM: PartialEq> Register<ENUM> {
                 .find(|f| f.id == *field_id)
                 .ok_or(ErrorReg::FieldNotFound)?;
 
-            // Validate field definition
-            if !validate_field(field.width, field.offset, self.bytes) {
-                return Err(ErrorReg::WrongFieldDef);
-            }
-
             // Extract field value using mask and shift
             let mask = create_mask(field.width, field.offset);
             output[i] = (raw_read & mask) >> field.offset;
@@ -230,9 +219,6 @@ impl<ENUM: PartialEq> Register<ENUM> {
     /// Write a bit sequence (given as a u32 LE) to the register
     /// Endian conversion done internally based based on the order specified in the self.order
     pub fn write<B: RegisterBus>(&self, bus: &mut B, val: u32) -> Result<(), ErrorReg<B::Error>> {
-        if self.bytes > 4 {
-            return Err(ErrorReg::WrongFieldDef);
-        }
         if !matches!(self.access, Mode::RW | Mode::W) {
             return Err(ErrorReg::ReadOnly);
         }
@@ -268,10 +254,6 @@ impl<ENUM: PartialEq> Register<ENUM> {
             .iter()
             .find(|f| f.id == field_id)
             .ok_or(ErrorReg::FieldNotFound)?;
-
-        if !validate_field(field.width, field.offset, self.bytes) {
-            return Err(ErrorReg::WrongFieldDef);
-        };
 
         // Validate value to field fit
         let max_field_val = if field.width == 32 { u32::MAX } else { (1u32 << field.width) - 1 };
@@ -309,10 +291,6 @@ impl<ENUM: PartialEq> Register<ENUM> {
                 .iter()
                 .find(|f| f.id == *id)
                 .ok_or(ErrorReg::FieldNotFound)?;
-
-            if !validate_field(field.width, field.offset, self.bytes) {
-                return Err(ErrorReg::WrongFieldDef);
-            }
 
             // Validate value to field fit
             let max_field_val =
@@ -359,10 +337,6 @@ impl<ENUM: PartialEq> Register<ENUM> {
             .find(|f| f.id == field_id)
             .ok_or(ErrorReg::FieldNotFound)?;
 
-        if !validate_field(field.width, field.offset, self.bytes) {
-            return Err(ErrorReg::WrongFieldDef);
-        }
-
         Ok(create_mask(field.width, field.offset))
     }
 }
@@ -376,17 +350,49 @@ fn create_mask(width: u8, offset: u8) -> u32 {
     if width == 32 { u32::MAX } else { ((1u32 << width) - 1) << offset }
 }
 
-#[inline]
-fn validate_field(width: u8, offset: u8, bytes: u8) -> bool {
-    if width == 0 || width > 32 {
-        return false;
+/// Static validation for the Registry definition at creation
+pub const fn validated<ENUM: 'static + PartialEq>(reg: Register<ENUM>) -> Register<ENUM> {
+    if reg.bytes == 0 || reg.bytes > MAX_BYTES {
+        panic!("Register size must be 1 to 4 bytes");
     }
-    if let Some(total_bits) = offset.checked_add(width) {
-        total_bits <= bytes * 8
+
+    let bits = (reg.bytes as u16) * 8;
+
+    if let Some(list) = reg.fields {
+        let mut i = 0;
+        while i < list.len() {
+            let f = &list[i]; // <-- use reference
+
+            if f.width == 0 {
+                panic!("Field width cannot be 0");
+            }
+
+            if (f.offset as u16) + (f.width as u16) > bits {
+                panic!("Field exceeds register size");
+            }
+
+            // Check for field overlaps
+            let mut j = 0;
+            while j < list.len() {
+                if i != j {
+                    let other = &list[j];
+                    let f_start = f.offset;
+                    let f_end = f.offset + f.width - 1;
+                    let o_start = other.offset;
+                    let o_end = other.offset + other.width - 1;
+
+                    if !(f_end < o_start || f_start > o_end) {
+                        panic!("Fields overlap");
+                    }
+                }
+                j += 1;
+            }
+
+            i += 1;
+        }
     }
-    else {
-        false
-    }
+
+    reg
 }
 
 // —————————————————————————————————————————————————————————————————————————————————————————————————
