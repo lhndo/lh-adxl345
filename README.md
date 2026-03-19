@@ -6,6 +6,10 @@ Supports I2C / SPI communications though a generic RegisterBus Trait.
 
 Reference: <https://www.analog.com/media/en/technical-documentation/data-sheets/adxl345.pdf>
 
+
+![](assets/console.gif)
+
+
 ## Example I2C:
 ```rust
 
